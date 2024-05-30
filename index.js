@@ -1,37 +1,31 @@
 const express = require('express');
-const app = express();
 const bodyParser = require('body-parser');
 const path = require('path');
 
-app.set('view-engine', 'ejs');
+const app = express();
+
+/* to set view engine */
+app.set('view engine', 'ejs');
+
+/* folder to be used for views */
 app.set('views', 'views');
 
-// to serve static files like css or png's - by default will not accessible
+const adminData = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
+
+/* to parse body of the request and to set it inside req.body */
+app.use(bodyParser.urlencoded({ extended: false }));
+
+/* to serve static files like css or png's - by default will not accessible */
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/admin', adminData.routes);
+app.use(shopRoutes);
 
-const users = [];
-
-app.get('/', (req, res) => {
-  res.render('user-form.ejs', {
-    pageTitle: 'UserForm Page'
-  });
+app.use((req, res, next) => {
+  res.status(404).render('404', { pageTitle: 'Page Not Found' });
 });
 
-app.get('/users', (req, res) => {
-  res.render('users.ejs', {
-    pageTitle: 'Users',
-    users: users,
-  });
-})
-
-app.post('/users', (req, res) => {
-  console.log('Post call');
-  users.push({ userName: req.body.userName});
-  res.redirect('/users')
-})
 
 app.listen(3000, () => {
   console.log('App started successfully')
