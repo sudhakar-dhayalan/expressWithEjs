@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const Product = require('./product');
+const Order = require('./order');
 
 const userSchema = new Schema({
   name: {
@@ -57,6 +58,11 @@ userSchema.methods.removeItemFromCart = function (productId) {
     return item.productId.toString() !== productId.toString();
   });
   this.cart.items = updatedCartItems;
+  return this.save();
+};
+
+userSchema.methods.clearCart = function () {
+  this.cart = { items: [] };
   return this.save();
 };
 
