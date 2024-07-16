@@ -1,6 +1,7 @@
 const path = require('path');
 
 const express = require('express');
+const session = require('express-session');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
@@ -16,6 +17,13 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 
+app.use(
+  session({
+    secret: 'Any string can be added, these will be encrypted',
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
