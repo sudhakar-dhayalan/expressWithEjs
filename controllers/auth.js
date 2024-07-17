@@ -11,25 +11,56 @@ exports.getLogin = (req, res, next) => {
 };
 
 exports.postLogin = (req, res, next) => {
-  
   User.findById('66842b1d27f84173e4eb9622')
-  .then((user) => {
+    .then((user) => {
       console.log('came inside post login');
       req.session.isLoggedIn = true;
       // Todo
-      req.session.user = { email: user.email, name: user.name }//, _id: user._id };
-      req.session.save(err => {
+      req.session.user = { email: user.email, name: user.name }; //, _id: user._id };
+      req.session.save((err) => {
         console.log(err);
         res.redirect('/');
-      })
+      });
       // req.session.user = user;
     })
     .catch((err) => console.log(err));
 };
 
 exports.postLogout = (req, res, next) => {
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     console.log(err);
     res.redirect('/');
   });
+};
+
+exports.getSignup = (req, res, next) => {
+  res.render('auth/signup', {
+    path: '/signup',
+    pageTitle: 'signup',
+    isAuthenticated: req.sesssion?.isLoggedIn,
+  });
+};
+
+exports.postSignup = (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
+  User.findOne({ email })
+    .then((existingUser) => {
+      if (existingUser) {
+        res.redirect('/signup');
+        console.log('User already exists');
+      }
+
+      const user = new User({
+        email,
+        password,
+        cart: { items: [] },
+      });
+      user.save();
+    })
+    .then((err) => {
+      console.log(err);
+      res.redirect('/login');
+    });
 };
