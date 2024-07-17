@@ -38,7 +38,7 @@ app.use((req, res, next) => {
     // console.log('session.user is not there')
     return next();
   }
-  User.findById('66842b1d27f84173e4eb9622')
+  User.findOne({ email: req.session.user.email})
     .then((user) => {
       req.user = user;
       // console.log('session.user is there. Hurray!!!');
