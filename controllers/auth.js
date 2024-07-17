@@ -11,17 +11,37 @@ exports.getLogin = (req, res, next) => {
 };
 
 exports.postLogin = (req, res, next) => {
-  User.findById('66842b1d27f84173e4eb9622')
-    .then((user) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  User.findOne({ email })
+    // User.findById('66842b1d27f84173e4eb9622')
+    .then((existingUser) => {
       console.log('came inside post login');
-      req.session.isLoggedIn = true;
-      // Todo
-      // req.session.user = user;
-      req.session.user = { email: user.email, name: user.name }; //, _id: user._id };
-      req.session.save((err) => {
-        console.log(err);
-        res.redirect('/');
-      });
+
+      if (!existingUser) {
+        return res.redirect('/login');
+      }
+
+      bcryptjs
+        .compare(password, existingUser.password)
+        .then((isPasswordMatching) => {
+          if (isPasswordMatching) {
+            req.session.isLoggedIn = true;
+            // Todo
+            // req.session.user = existingUser;
+            req.session.user = { email: existingUser.email }; //, _id: user._id };
+            req.session.save((err) => {
+              console.log(err);
+              return res.redirect('/');
+            });
+          } else {
+            return res.redirect('/login');
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     })
     .catch((err) => console.log(err));
 };
