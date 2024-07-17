@@ -33,6 +33,21 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  if (!req.session.user) {
+    // console.log('session.user is not there')
+    return next();
+  }
+  User.findById('66842b1d27f84173e4eb9622')
+    .then((user) => {
+      req.user = user;
+      // console.log('session.user is there. Hurray!!!');
+      // console.log(user);
+      next();
+    })
+    .catch((err) => console.log(err));
+});
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
