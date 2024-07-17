@@ -1,10 +1,11 @@
 const path = require('path');
-
 const express = require('express');
+const csrf = require('csurf');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const MongoDbSession = require('connect-mongodb-session')(session);
+const csrfProtection = csrf();
 
 const errorController = require('./controllers/error');
 const User = require('./models/user');
@@ -16,6 +17,9 @@ const store = new MongoDbSession({
   uri: MONGODB_URI,
   collection: 'sessions'
 });
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
@@ -33,6 +37,9 @@ app.use(
   })
 );
 
+// Note: csrf middleware must be added after session store
+app.use(csrfProtection);
+
 app.use((req, res, next) => {
   if (!req.session.user) {
     // console.log('session.user is not there')
@@ -48,8 +55,12 @@ app.use((req, res, next) => {
     .catch((err) => console.log(err));
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
