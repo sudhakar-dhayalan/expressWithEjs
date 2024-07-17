@@ -1,4 +1,4 @@
-const BSON = require('bson');
+const bcryptjs = require('bcryptjs');
 const User = require('../models/user');
 
 exports.getLogin = (req, res, next) => {
@@ -16,12 +16,12 @@ exports.postLogin = (req, res, next) => {
       console.log('came inside post login');
       req.session.isLoggedIn = true;
       // Todo
+      // req.session.user = user;
       req.session.user = { email: user.email, name: user.name }; //, _id: user._id };
       req.session.save((err) => {
         console.log(err);
         res.redirect('/');
       });
-      // req.session.user = user;
     })
     .catch((err) => console.log(err));
 };
@@ -45,22 +45,24 @@ exports.postSignup = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
   const confirmPassword = req.body.confirmPassword;
-  User.findOne({ email })
-    .then((existingUser) => {
-      if (existingUser) {
-        res.redirect('/signup');
-        console.log('User already exists');
-      }
+  User.findOne({ email }).then((existingUser) => {
+    if (existingUser) {
+      console.log('User already exists');
+      return res.redirect('/signup');
+    }
 
-      const user = new User({
-        email,
-        password,
-        cart: { items: [] },
+    return bcryptjs
+      .hash(password, 12)
+      .then((encryptedPassword) => {
+        const user = new User({
+          email,
+          password: encryptedPassword,
+          cart: { items: [] },
+        });
+        return user.save();
+      })
+      .then((result) => {
+        res.redirect('/login');
       });
-      user.save();
-    })
-    .then((err) => {
-      console.log(err);
-      res.redirect('/login');
-    });
+  });
 };
