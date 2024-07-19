@@ -1,47 +1,81 @@
 const path = require('path');
-
 const express = require('express');
+const csrf = require('csurf');
+const session = require('express-session');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const MongoDbSession = require('connect-mongodb-session')(session);
+const csrfProtection = csrf();
 
 const errorController = require('./controllers/error');
-// const User = require('./models/user');
+const User = require('./models/user');
+
+const MONGODB_URI = 'mongodb+srv://sudhakardayalan95:testQwerty@cluster0.utlkld4.mongodb.net/shop?retryWrites=true&w=majority&appName=Cluster0';
 
 const app = express();
-
-app.set('view engine', 'ejs');
-app.set('views', 'views');
-
-const adminRoutes = require('./routes/admin');
-const shopRoutes = require('./routes/shop');
+const store = new MongoDbSession({
+  uri: MONGODB_URI,
+  collection: 'sessions'
+});
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// app.use((req, res, next) => {
-//   User.findById('5baa2528563f16379fc8a610')
-//     .then(user => {
-//       req.user = new User(user.name, user.email, user.cart, user._id);
-//       next();
-//     })
-//     .catch(err => console.log(err));
-// });
+app.set('view engine', 'ejs');
+app.set('views', 'views');
+
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
+
+app.use(
+  session({
+    secret: 'Any string can be added, these will be encrypted',
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  })
+);
+
+// Note: csrf middleware must be added after session store
+app.use(csrfProtection);
+
+app.use((req, res, next) => {
+  if (!req.session.user) {
+    // console.log('session.user is not there')
+    return next();
+  }
+  User.findOne({ email: req.session.user.email})
+    .then((user) => {
+      req.user = user;
+      // console.log('session.user is there. Hurray!!!');
+      // console.log(user);
+      next();
+    })
+    .catch((err) => console.log(err));
+});
+
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
-
 mongoose
   .connect(
-    'mongodb+srv://sudhakardayalan95:testQwerty@cluster0.utlkld4.mongodb.net/shop?retryWrites=true&w=majority&appName=Cluster0'
+    MONGODB_URI
   )
   .then((result) => {
-    console.log('Connected')
-    // console.log(result);
+    console.log('Connected');
     app.listen(3000);
   })
   .catch((err) => {
-    console.log(err)
+    console.log(err);
   });
